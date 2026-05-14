@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Form Access - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>One-Time QR Generator</h1>
+            <p>Generate a unique QR code that expires after a single scan.</p>
+        </header>
+
+        <div class="dashboard-layout">
+            <main class="dashboard-card qr-card">
+                <div class="qr-content-row">
+                    <!-- Left Side: QR Code -->
+                    <div id="qr-container" class="qr-display">
+                        <div class="qr-placeholder">
+                            <p>Loading status...</p>
+                        </div>
+                    </div>
+
+                    <!-- Right Side: Actions -->
+                    <div class="qr-actions">
+                        <div class="form-selection">
+                            <label for="form-select">Select a Form for the QR Code:</label>
+                            <select id="form-select">
+                                <option value="">Loading forms...</option>
+                            </select>
+                        </div>
+
+                        <div class="controls">
+                            <button id="generate-btn" class="primary-btn">
+                                <span>Generate New QR</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <section class="forms-management-section dashboard-card">
+                <h2>Manage Forms</h2>
+                <div class="add-form-container">
+                    <input type="text" id="new-form-name" placeholder="Form Name (e.g. Feedback)">
+                    <input type="url" id="new-form-url" placeholder="Google Form URL">
+                    <button id="add-form-btn" class="primary-btn">Add Form</button>
+                </div>
+                <ul id="forms-list">
+                    <!-- Form list will be rendered here -->
+                </ul>
+            </section>
+        </div>
+
+        <section class="info-section">
+            <h2>How it works</h2>
+            <div class="step-grid">
+                <div class="step-card">
+                    <div class="icon">1</div>
+                    <h3>Scan</h3>
+                    <p>Person scans the QR code with their mobile device.</p>
+                </div>
+                <div class="step-card">
+                    <div class="icon">2</div>
+                    <h3>Redirect</h3>
+                    <p>They are automatically sent to your Google Form.</p>
+                </div>
+                <div class="step-card">
+                    <div class="icon">3</div>
+                    <h3>Expire</h3>
+                    <p>The link immediately becomes invalid for everyone else.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="/js/main.js"></script>
+</body>
+
+</html>
