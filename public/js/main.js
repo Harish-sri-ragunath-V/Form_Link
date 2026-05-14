@@ -1,6 +1,17 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // IMPORTANT: Change this to your actual Ngrok URL or hosted server URL
-    const API_BASE_URL = 'https://rephrase-vastly-fetal.ngrok-free.dev';
+    // Render Production URL
+    const API_BASE_URL = 'https://form-link-goki.onrender.com';
+
+    // UI Elements
+    const authContainer = document.getElementById('auth-container');
+    const mainContent = document.getElementById('main-content');
+    const authForm = document.getElementById('auth-form');
+    const authTitle = document.getElementById('auth-title');
+    const authSubmitBtn = document.getElementById('auth-submit-btn');
+    const toggleAuth = document.getElementById('toggle-auth');
+    const authToggleText = document.getElementById('auth-toggle-text');
+    const displayUsername = document.getElementById('display-username');
+    const logoutBtn = document.getElementById('logout-btn');
 
     const generateBtn = document.getElementById('generate-btn');
     const qrContainer = document.getElementById('qr-container');
@@ -11,10 +22,99 @@ document.addEventListener('DOMContentLoaded', () => {
     const newFormUrl = document.getElementById('new-form-url');
 
     let forms = [];
+    let isLogin = true;
+    let token = localStorage.getItem('token');
+    let username = localStorage.getItem('username');
+
+    // --- Authentication Logic ---
+
+    function updateUI() {
+        if (token) {
+            authContainer.style.display = 'none';
+            mainContent.style.display = 'block';
+            displayUsername.textContent = username;
+            fetchForms();
+            checkActiveToken();
+        } else {
+            authContainer.style.display = 'flex';
+            mainContent.style.display = 'none';
+        }
+    }
+
+    toggleAuth.addEventListener('click', () => {
+        isLogin = !isLogin;
+        authTitle.textContent = isLogin ? 'Welcome Back' : 'Create Account';
+        authSubmitBtn.textContent = isLogin ? 'Login' : 'Sign Up';
+        authToggleText.innerHTML = isLogin 
+            ? 'Don\'t have an account? <span id="toggle-auth">Sign Up</span>' 
+            : 'Already have an account? <span id="toggle-auth">Login</span>';
+        
+        // Re-add listener to the new span
+        document.getElementById('toggle-auth').addEventListener('click', () => toggleAuth.click());
+    });
+
+    authForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const usernameInput = document.getElementById('username').value;
+        const passwordInput = document.getElementById('password').value;
+        const endpoint = isLogin ? '/api/login' : '/api/register';
+
+        try {
+            const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: usernameInput, password: passwordInput })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                if (isLogin) {
+                    token = data.token;
+                    username = data.username;
+                    localStorage.setItem('token', token);
+                    localStorage.setItem('username', username);
+                    updateUI();
+                } else {
+                    alert('Registration successful! Please login.');
+                    isLogin = true;
+                    toggleAuth.click();
+                }
+            } else {
+                alert(data.error);
+            }
+        } catch (err) {
+            alert('Connection failed.');
+        }
+    });
+
+    logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('username');
+        token = null;
+        username = null;
+        updateUI();
+    });
+
+    // Helper for Authenticated Fetch
+    async function authFetch(url, options = {}) {
+        const headers = {
+            ...options.headers,
+            'Authorization': `Bearer ${token}`
+        };
+        const response = await fetch(`${API_BASE_URL}${url}`, { ...options, headers });
+        
+        if (response.status === 401 || response.status === 403) {
+            logoutBtn.click();
+            throw new Error('Session expired');
+        }
+        return response;
+    }
+
+    // --- Dashboard Logic ---
 
     async function fetchForms() {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/forms`);
+            const res = await authFetch('/api/forms');
             const data = await res.json();
             if (data.success) {
                 forms = data.forms;
@@ -26,7 +126,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderForms() {
-        // Render dropdown
         formSelect.innerHTML = '<option value="">-- Select a Form --</option>';
         forms.forEach(form => {
             const option = document.createElement('option');
@@ -35,7 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
             formSelect.appendChild(option);
         });
 
-        // Render management list
         formsList.innerHTML = '';
         if (forms.length === 0) {
             formsList.innerHTML = '<li style="color: #666; text-align: center; padding: 10px;">No forms added yet.</li>';
@@ -44,28 +142,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         forms.forEach(form => {
             const li = document.createElement('li');
-            li.style.display = 'flex';
-            li.style.justifyContent = 'space-between';
-            li.style.alignItems = 'center';
-            li.style.padding = '10px';
-            li.style.borderBottom = '1px solid #eee';
-
-            const info = document.createElement('div');
-            // Hide the raw URL to prevent users from copying it
-            info.innerHTML = `<strong>${form.name}</strong> <br><small style="color: #888;"><i>Hidden Link</i></small>`;
-
-            const deleteBtn = document.createElement('button');
-            deleteBtn.textContent = 'Delete';
-            deleteBtn.style.padding = '5px 10px';
-            deleteBtn.style.backgroundColor = '#ff4d4f';
-            deleteBtn.style.color = 'white';
-            deleteBtn.style.border = 'none';
-            deleteBtn.style.borderRadius = '4px';
-            deleteBtn.style.cursor = 'pointer';
-            deleteBtn.onclick = () => deleteForm(form.id);
-
-            li.appendChild(info);
-            li.appendChild(deleteBtn);
+            li.className = 'form-list-item';
+            li.innerHTML = `
+                <div class="form-list-info">
+                    <strong>${form.name}</strong>
+                    <small><i>Hidden Link</i></small>
+                </div>
+                <button class="delete-btn" data-id="${form.id}">Delete</button>
+            `;
+            
+            li.querySelector('.delete-btn').onclick = () => deleteForm(form.id);
             formsList.appendChild(li);
         });
     }
@@ -73,13 +159,10 @@ document.addEventListener('DOMContentLoaded', () => {
     addFormBtn.addEventListener('click', async () => {
         const name = newFormName.value.trim();
         const url = newFormUrl.value.trim();
-        if (!name || !url) {
-            alert('Please provide both a name and a URL.');
-            return;
-        }
+        if (!name || !url) return alert('Fill all fields.');
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/forms`, {
+            const res = await authFetch('/api/forms', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, url })
@@ -89,58 +172,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 newFormName.value = '';
                 newFormUrl.value = '';
                 fetchForms();
-            } else {
-                alert('Error adding form: ' + data.error);
             }
-        } catch (err) {
-            console.error('Error adding form:', err);
-        }
+        } catch (err) { console.error(err); }
     });
 
     async function deleteForm(id) {
-        if (!confirm('Are you sure you want to delete this form?')) return;
+        if (!confirm('Delete this form?')) return;
         try {
-            const res = await fetch(`${API_BASE_URL}/api/forms/${id}`, { method: 'DELETE' });
-            const data = await res.json();
-            if (data.success) {
-                fetchForms();
-            } else {
-                alert('Error deleting form: ' + data.error);
-            }
-        } catch (err) {
-            console.error('Error deleting form:', err);
-        }
+            const res = await authFetch(`/api/forms/${id}`, { method: 'DELETE' });
+            if ((await res.json()).success) fetchForms();
+        } catch (err) { console.error(err); }
     }
 
     async function generateQR() {
         if (generateBtn.disabled) return;
-        
         const formId = formSelect.value;
-        if (!formId) {
-            alert('Please select a form from the dropdown first.');
-            return;
-        }
+        if (!formId) return alert('Select a form.');
 
         generateBtn.disabled = true;
         const originalText = generateBtn.innerHTML;
         generateBtn.innerHTML = '<span>Generating...</span>';
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/generate`, { 
+            const response = await authFetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ formId })
             });
             const data = await response.json();
-
-            if (data.success) {
-                renderQR(data);
-            } else {
-                alert('Error: ' + data.error);
-            }
+            if (data.success) renderQR(data);
         } catch (err) {
-            console.error('Error generating QR:', err);
-            alert('Failed to connect to server.');
+            console.error(err);
         } finally {
             generateBtn.disabled = false;
             generateBtn.innerHTML = originalText;
@@ -161,7 +223,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         `;
-
         document.getElementById('copy-btn').addEventListener('click', copyUrl);
     }
 
@@ -169,7 +230,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const copyText = document.getElementById("qr-url-input");
         copyText.select();
         document.execCommand("copy");
-
         const btn = document.getElementById('copy-btn');
         btn.innerText = 'Copied!';
         setTimeout(() => { btn.innerText = 'Copy'; }, 2000);
@@ -178,36 +238,22 @@ document.addEventListener('DOMContentLoaded', () => {
     generateBtn.addEventListener('click', generateQR);
 
     let currentTokenId = null;
-
-    // Check for an existing active token on load and poll for updates
     async function checkActiveToken() {
+        if (!token) return;
         try {
-            const response = await fetch(`${API_BASE_URL}/api/active-token`);
+            const response = await authFetch('/api/active-token');
             const data = await response.json();
-
-            if (data.active) {
-                // Only re-render if the token has actually changed
-                if (data.token !== currentTokenId) {
-                    currentTokenId = data.token;
-                    renderQR(data);
-                }
-            } else {
-                qrContainer.innerHTML = `
-                    <div class="qr-placeholder">
-                        <p>No active QR code. Click below to generate one.</p>
-                    </div>
-                `;
+            if (data.active && data.token !== currentTokenId) {
+                currentTokenId = data.token;
+                renderQR(data);
+            } else if (!data.active) {
+                qrContainer.innerHTML = `<div class="qr-placeholder"><p>No active QR code.</p></div>`;
                 currentTokenId = null;
             }
-        } catch (err) {
-            console.log('No active token found or server offline');
-        }
+        } catch (err) { }
     }
 
-    // Initial check
-    fetchForms();
-    checkActiveToken();
-
-    // Auto-update dashboard every 3 seconds
-    setInterval(checkActiveToken, 3000);
+    // Initial load
+    updateUI();
+    setInterval(checkActiveToken, 5000);
 });

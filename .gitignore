@@ -14,8 +14,9 @@ database/
 Thumbs.db
 
 # Android/Capacitor build files
-android/app/build/
+android/.idea/
 android/.gradle/
+android/app/build/
 android/local.properties
 android/captures/
 android/app/src/main/assets/public/

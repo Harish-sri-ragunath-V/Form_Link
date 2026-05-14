@@ -1,5 +1,5 @@
 
-const SERVER_URL = 'https://rephrase-vastly-fetal.ngrok-free.dev';
+const SERVER_URL = 'https://form-link-goki.onrender.com';
 
 function onFormSubmit(e) {
   const responses = e.response.getItemResponses();

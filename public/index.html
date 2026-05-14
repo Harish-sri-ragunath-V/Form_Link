@@ -7,76 +7,185 @@
     <title>QR Form Access - Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
+    <style>
+        /* Auth Specific Styles */
+        #auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .auth-card h2 {
+            margin-bottom: 2rem;
+            background: linear-gradient(to right, #818cf8, #34d399);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2rem;
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .auth-form input {
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+        }
+
+        .auth-toggle {
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .auth-toggle span {
+            color: var(--primary);
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        #main-content {
+            display: none; /* Hidden until login */
+        }
+
+        .user-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding: 1rem 2rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+        }
+
+        .logout-btn {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid var(--error);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: var(--error);
+            color: white;
+        }
+    </style>
 </head>
 
 <body>
-    <div class="container">
-        <header>
-            <h1>One-Time QR Generator</h1>
-            <p>Generate a unique QR code that expires after a single scan.</p>
-        </header>
+    <!-- Authentication Section -->
+    <div id="auth-container">
+        <div class="auth-card animate-fade-in">
+            <h2 id="auth-title">Welcome Back</h2>
+            <form class="auth-form" id="auth-form">
+                <input type="text" id="username" placeholder="Username" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <button type="submit" id="auth-submit-btn" class="primary-btn">Login</button>
+            </form>
+            <p class="auth-toggle" id="auth-toggle-text">
+                Don't have an account? <span id="toggle-auth">Sign Up</span>
+            </p>
+        </div>
+    </div>
 
-        <div class="dashboard-layout">
-            <main class="dashboard-card qr-card">
-                <div class="qr-content-row">
-                    <!-- Left Side: QR Code -->
-                    <div id="qr-container" class="qr-display">
-                        <div class="qr-placeholder">
-                            <p>Loading status...</p>
+    <!-- Main Dashboard Section -->
+    <div id="main-content">
+        <div class="container">
+            <div class="user-nav">
+                <span>Logged in as: <strong id="display-username">User</strong></span>
+                <button id="logout-btn" class="logout-btn">Logout</button>
+            </div>
+
+            <header>
+                <h1>One-Time QR Generator</h1>
+                <p>Generate a unique QR code that expires after a single scan.</p>
+            </header>
+
+            <div class="dashboard-layout">
+                <main class="dashboard-card qr-card">
+                    <div class="qr-content-row">
+                        <div id="qr-container" class="qr-display">
+                            <div class="qr-placeholder">
+                                <p>Loading status...</p>
+                            </div>
+                        </div>
+
+                        <div class="qr-actions">
+                            <div class="form-selection">
+                                <label for="form-select">Select a Form for the QR Code:</label>
+                                <select id="form-select">
+                                    <option value="">Loading forms...</option>
+                                </select>
+                            </div>
+
+                            <div class="controls">
+                                <button id="generate-btn" class="primary-btn">
+                                    <span>Generate New QR</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
+                </main>
 
-                    <!-- Right Side: Actions -->
-                    <div class="qr-actions">
-                        <div class="form-selection">
-                            <label for="form-select">Select a Form for the QR Code:</label>
-                            <select id="form-select">
-                                <option value="">Loading forms...</option>
-                            </select>
-                        </div>
+                <section class="forms-management-section dashboard-card">
+                    <h2>Manage Forms</h2>
+                    <div class="add-form-container">
+                        <input type="text" id="new-form-name" placeholder="Form Name (e.g. Feedback)">
+                        <input type="url" id="new-form-url" placeholder="Google Form URL">
+                        <button id="add-form-btn" class="primary-btn">Add Form</button>
+                    </div>
+                    <ul id="forms-list">
+                        <!-- Form list will be rendered here -->
+                    </ul>
+                </section>
+            </div>
 
-                        <div class="controls">
-                            <button id="generate-btn" class="primary-btn">
-                                <span>Generate New QR</span>
-                            </button>
-                        </div>
+            <section class="info-section">
+                <h2>How it works</h2>
+                <div class="step-grid">
+                    <div class="step-card">
+                        <div class="icon">1</div>
+                        <h3>Scan</h3>
+                        <p>Person scans the QR code with their mobile device.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="icon">2</div>
+                        <h3>Redirect</h3>
+                        <p>They are automatically sent to your Google Form.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="icon">3</div>
+                        <h3>Expire</h3>
+                        <p>The link immediately becomes invalid for everyone else.</p>
                     </div>
                 </div>
-            </main>
-
-            <section class="forms-management-section dashboard-card">
-                <h2>Manage Forms</h2>
-                <div class="add-form-container">
-                    <input type="text" id="new-form-name" placeholder="Form Name (e.g. Feedback)">
-                    <input type="url" id="new-form-url" placeholder="Google Form URL">
-                    <button id="add-form-btn" class="primary-btn">Add Form</button>
-                </div>
-                <ul id="forms-list">
-                    <!-- Form list will be rendered here -->
-                </ul>
             </section>
         </div>
-
-        <section class="info-section">
-            <h2>How it works</h2>
-            <div class="step-grid">
-                <div class="step-card">
-                    <div class="icon">1</div>
-                    <h3>Scan</h3>
-                    <p>Person scans the QR code with their mobile device.</p>
-                </div>
-                <div class="step-card">
-                    <div class="icon">2</div>
-                    <h3>Redirect</h3>
-                    <p>They are automatically sent to your Google Form.</p>
-                </div>
-                <div class="step-card">
-                    <div class="icon">3</div>
-                    <h3>Expire</h3>
-                    <p>The link immediately becomes invalid for everyone else.</p>
-                </div>
-            </div>
-        </section>
     </div>
 
     <script src="/js/main.js"></script>
